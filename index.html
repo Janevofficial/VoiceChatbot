@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Voice Chatbot</title>
+<style>
+    body {
+        background-image: url('https://hostels.gbu.ac.in/images/logo/GBU%20logo.png'); /* online image URL */
+        background-size: cover;      /* page cover kare */
+        background-position: center center; /* center me align */
+        background-repeat: no-repeat; /* repeat na ho */
+        font-family: Arial, sans-serif;
+         background-size: 300px 300px;
+        
+
+        padding: 20px;
+        text-align: center;
+    }
+    #startBtn {
+        padding: 15px 25px;
+        font-size: 20px;
+        border-radius: 10px;
+        border: none;
+        background: #4CAF50;
+        color: white;
+        cursor: pointer;
+    }
+    #chat {
+        width: 90%;
+        margin: 20px auto;
+        max-height: 400px;
+        overflow-y: auto;
+        
+        padding: 15px;
+        border-radius: 10px;
+        text-align: left;
+    }
+    .user { color: blue; margin: 10px 0; }
+    .bot { color: green; margin: 10px 0; }
+
+    #footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #4CAF50;
+    color: white;
+    text-align: center;
+    padding: 10px 0;
+}
+
+</style>
+</head>
+<body>
+    <h1>Janev Official Voice Chatbot</h1>
+    <div id="chat"></div>
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
+
+<button id="startBtn">🎤 Start Talking</button>
+
+
+
+<script>
+
+
+
+// star button by enter
+
+
+const button = document.getElementById("startBtn");
+
+// Button ka normal click event
+button.onclick = () => {
+    alert("Button clicked!");
+};
+
+// Keyboard se Enter press hone par button click
+document.addEventListener("keydown", function(event) {
+    if(event.key === "Enter") {  // Enter key check
+        button.click();           // button ko programmatically click karwa diya
+    }
+});
+
+
+
+
+
+
+
+// ------------------------------
+// API KEY PROMPT
+// ------------------------------
+let API_KEY = "";
+function askApiKey() {
+    API_KEY = prompt("Please enter your API Key to start the chatbot:");
+    if(!API_KEY) {
+        alert("API Key is required to use the chatbot.");
+    }
+}
+
+// ------------------------------
+// For Speech Recognition
+// ------------------------------
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognizer = new SpeechRecognition();
+recognizer.lang = "en-US";
+recognizer.continuous = false;
+recognizer.interimResults = false;
+
+const chatBox = document.getElementById("chat");
+const startBtn = document.getElementById("startBtn");
+
+// **Start Listening**
+startBtn.onclick = () => {
+    if(!API_KEY) {
+        askApiKey();
+        if(!API_KEY) return; // stop if user cancels
+    }
+    recognizer.start();
+    startBtn.innerText = "Listening...";
+};
+
+// **When Voice Detected**
+recognizer.onresult = function(event) {
+    let userText = event.results[0][0].transcript;
+    chatBox.innerHTML += `<div class='user'><b>You:</b> ${userText}</div>`;
+    getBotReply(userText);
+};
+
+recognizer.onerror = () => {
+    startBtn.innerText = "🎤 Start Talking";
+};
+
+// ------------------------------
+// CALL GROQ API
+// ------------------------------
+async function getBotReply(text) {
+    startBtn.innerText = "Thinking...";
+
+    let response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${API_KEY}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [
+                { role: "user", content: text }
+            ]
+        })
+    });
+
+    let data = await response.json();
+    let reply = data.choices[0].message.content;
+
+    chatBox.innerHTML += `<div class='bot'><b>Bot:</b> ${reply}</div>`;
+
+    speak(reply); // voice output
+
+    startBtn.innerText = "🎤 Start Talking";
+}
+
+// ------------------------------
+// TEXT-TO-SPEECH
+// ------------------------------
+function speak(text) {
+    const speech = new SpeechSynthesisUtterance(text);
+    speech.lang = "en-US";
+    speech.pitch = 1;
+    speech.rate = 1;
+
+    window.speechSynthesis.speak(speech);
+}
+</script>
+
+
+
+
+<footer id="footer">
+    © 2025 Janev Chatbot, Chaudhary Shad Khan
+</footer>
+
+
+
+</body>
+</html>
